@@ -70,6 +70,11 @@ EXTERN_C NTSTATUS Sw3NtOpenProcess(
 	IN PCLIENT_ID ClientId OPTIONAL);
 
 
+EXTERN_C NTSTATUS Sw3NtResumeThread(
+  IN HANDLE               ThreadHandle,
+  OUT PULONG              SuspendCount OPTIONAL );
+  
+
 DWORD GlobalHash = 0x0;
 
 
@@ -84,6 +89,7 @@ NTSTATUS Sw3NtAllocateVirtualMemory_(Args&&... args)
 	GlobalHash = 806327511;
     return Sw3NtAllocateVirtualMemory(std::forward<Args>(args)...);
 }
+
 
 // NTSTATUS Sw3NtAllocateVirtualMemory_(
 // HANDLE ProcessHandle,
@@ -100,8 +106,7 @@ NTSTATUS Sw3NtAllocateVirtualMemory_(Args&&... args)
 
 // 	GlobalHash = 806327511;
 
-// 	return Sw3NtAllocateVirtualMemory(ProcessHandle, BaseAddress, ZeroBits,
-// 	RegionSize, AllocationType, Protect);
+// 	return Sw3NtAllocateVirtualMemory(ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect);
 // }
 
 
@@ -207,6 +212,20 @@ PPS_ATTRIBUTE_LIST AttributeList)
 
 	return Sw3NtCreateThreadEx(ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, StartRoutine, Argument, CreateFlags, ZeroBits, StackSize, MaximumStackSize, AttributeList);
 }
+
+EXTERN_C NTSTATUS Sw3NtResumeThread_(
+HANDLE ThreadHandle,
+PULONG SuspendCount)
+{
+	// PCSTR FunctionName = "ZwResumeThread";
+	// GlobalHash = SW3_HashSyscall(FunctionName);
+	// std::cout << "ZwResumeThread " << GlobalHash << std::endl;
+
+	GlobalHash = 4130550557;
+
+	return Sw3NtResumeThread(ThreadHandle, SuspendCount);
+}
+
 
 
 class Entry

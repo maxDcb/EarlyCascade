@@ -35,6 +35,18 @@ Sw3NtOpenProcess PROC
 	jmp pipo                                  
 Sw3NtOpenProcess ENDP
 
+Sw3NtCreateProcess PROC
+	jmp pipo                                  
+Sw3NtCreateProcess ENDP
+
+Sw3NtQueueApcThread PROC
+	jmp pipo                                  
+Sw3NtQueueApcThread ENDP
+
+Sw3NtResumeThread PROC
+	jmp pipo                                  
+Sw3NtResumeThread ENDP
+
 
 pipo PROC
 	mov [rsp +8], rcx          

