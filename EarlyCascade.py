@@ -91,7 +91,7 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
                                 os.remove(shellcodePath)
                         except OSError as error: 
                                 pass
-                        args = (donutBinary, '-f', '1', '-b', '3', '-m', 'go', '-p', binaryArgs, '-o', shellcodePath, binary)
+                        args = (donutBinary, '-f', '1', '-b', '1', '-m', 'go', '-p', binaryArgs, '-o', shellcodePath, binary)
                 else:   
                         donutBinary = os.path.join(Path(__file__).parent, './ressources/donut')
                         shellcodePath = os.path.join(Path(__file__).parent, './bin/'+shellcodeFile)
@@ -99,7 +99,7 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
                                 os.remove(shellcodePath)
                         except OSError as error: 
                                 pass
-                        args = (donutBinary, '-f', '1', '-b', '3', '-m', 'go', '-p', binaryArgs, '-o', shellcodePath, '-i' , binary)
+                        args = (donutBinary, '-f', '1', '-b', '1', '-m', 'go', '-p', binaryArgs, '-o', shellcodePath, '-i' , binary)
                 
                 popen = subprocess.Popen(args, stdout=subprocess.PIPE)
                 popen.wait()

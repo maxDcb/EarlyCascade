@@ -55,7 +55,7 @@ FARPROC WINAPI hlpGetProcAddress(HMODULE hMod, char * sProcName)
 	{
 		DWORD * pEAT = (DWORD *) (pBaseAddr + pExportDirAddr->AddressOfFunctions);
 		
-		WORD ordinal = (WORD) sProcName & 0xFFFF;	// convert to WORD
+		WORD ordinal = (WORD)(sProcName[0]) & 0xFFFF;	// convert to WORD
 		DWORD Base = pExportDirAddr->Base;			// first ordinal number
 
 		// check if ordinal is not out of scope
@@ -63,7 +63,7 @@ FARPROC WINAPI hlpGetProcAddress(HMODULE hMod, char * sProcName)
 			return NULL;
 
 		// get the function virtual address = RVA + BaseAddr
-		pProcAddr = (FARPROC) (pBaseAddr + (DWORD_PTR) pEAT[ordinal - Base]);
+		pProcAddr = (void*) (pBaseAddr + (DWORD_PTR) pEAT[ordinal - Base]);
 	}
 	// resolve function by name
 	else 
@@ -84,7 +84,7 @@ FARPROC WINAPI hlpGetProcAddress(HMODULE hMod, char * sProcName)
 			if (strcmp(sProcName, sTmpFuncName) == 0)	
 			{
 				// found, get the function virtual address = RVA + BaseAddr
-				pProcAddr = (FARPROC) (pBaseAddr + (DWORD_PTR) pEAT[pHintsTbl[ii]]);
+				pProcAddr = (void*) (pBaseAddr + (DWORD_PTR) pEAT[pHintsTbl[ii]]);
 				break;
 			}
 		}
