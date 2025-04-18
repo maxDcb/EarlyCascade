@@ -1,5 +1,7 @@
 # EarlyCascade
 
+This project is part of the [Exploration C2 Framework](https://github.com/maxDcb/C2TeamServer)
+
 Dropper that use Early Cascade technique [EarlyCascade](https://github.com/0xNinjaCyclone/EarlyCascade) to inject a shellcode generated with [Donut](https://github.com/TheWover/donut). The injection process use syscall inspiered by [SysWhispers3](https://github.com/klezVirus/SysWhispers3). 
 
 
