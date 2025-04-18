@@ -329,16 +329,6 @@ BYTE x64_stub[] =   "\x56\x57\x65\x48\x8b\x14\x25\x60\x00\x00\x00\x48\x8b\x52\x1
                     "\xe8\xb8\xff\xff\xff\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
 
 
-// typedef NTSTATUS(NTAPI* pNtAllocateVirtualMemory)(
-//   HANDLE             ProcessHandle,
-//   PVOID              *BaseAddress,
-//   ULONG              ZeroBits,
-//   PULONG             RegionSize,
-//   ULONG              AllocationType,
-//   ULONG              Protect
-// );
-
-
 #ifdef DEBUG
 int main()
 #else

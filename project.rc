@@ -25,7 +25,7 @@ BEGIN
     BEGIN
         BLOCK "040904E4" // United States (English)
         BEGIN
-            VALUE "CompanyName",      "Amadeus\0"
+            VALUE "CompanyName",      "CompanyName\0"
             VALUE "FileDescription",  "TestFunctional\0"
             VALUE "FileVersion",      VER_FILEVERSION_STR
             VALUE "InternalName",     "TestFunctional\0"
