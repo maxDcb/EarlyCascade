@@ -27,18 +27,26 @@ def printCiphertext(ciphertext):
 
 
 def getHelpExploration():
-        helpMessage = 'EarlyCascade generates a dropper that injects shellcode into a newly created process\n'
-        helpMessage += 'Usage:  Dropper EarlyCascade listenerDownload listenerBeacon -p <process> -t <targetHost>\n'
-        helpMessage += 'Options:\n'
-        helpMessage += '  -p, --process\t\t\tProcess to create for injection\n'
-        helpMessage += '  -t, --targetHost\t\tRestrict the dropper to run onto this host\n'
+        helpMessage = """
+EarlyCascade - Dropper Generator with Shellcode Injection
+
+Description:
+  EarlyCascade generates a dropper that injects shellcode into a newly created process. 
+  The shellcode can be generated from a binary using Donut or provided directly as a raw shellcode file.
+
+Usage:
+  Dropper EarlyCascade listenerDownload listenerBeacon -p <process>
+
+Options:
+  -p, --process             Target process to create and inject into (e.g., notepad.exe)
+"""
 
         return helpMessage
 
 
 def generatePayloadsExploration(binary, binaryArgs, rawShellCode, url, aditionalArgs):
 
-        binary_, binaryArgs_, rawShellCode_, process, url_, targetHost, sideDll, sideDllPath = parseCmdLine(aditionalArgs)
+        binary_, binaryArgs_, rawShellCode_, process, url_, targetHost = parseCmdLine(aditionalArgs)
 
         droppersPath, shellcodesPath, cmdToRun = generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
 
@@ -227,17 +235,25 @@ def generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
         return droppersPath, shellcodesPath, cmdToRun
 
 
+helpMessage = """
+EarlyCascade - Dropper Generator with Shellcode Injection
 
-helpMessage = 'EarlyCascade generates a dropper that injects shellcode into a newly created process\n'
-helpMessage += 'Usage: EarlyCascade.py -p <process> -u <url> -b <binary> -a <args> -t <targetHost>\n'
-helpMessage += 'Options:\n'
-helpMessage += '  -h, --help\t\t\tShow this help message and exit\n'
-helpMessage += '  -p, --process\t\t\tProcess to create for injection\n'
-helpMessage += '  -u, --url\t\t\tURL to fetch shellcode from\n'
-helpMessage += '  -b, --binary\t\t\tBinary to create the shellcode from\n'
-helpMessage += '  -a, --args\t\t\tArguments to pass to binary during shellcode creation\n'
-helpMessage += '  -r  --rawShellcode\t\tRaw shellcode file, donut will not be used\n'
-helpMessage += '  -t, --targetHost\t\tRestrict the dropper to run onto this host\n'
+Description:
+  EarlyCascade generates a dropper that injects shellcode into a newly created process. 
+  The shellcode can be generated from a binary using Donut or provided directly as a raw shellcode file.
+
+Usage:
+  EarlyCascade.py -p <process> -u <url> -b <binary> -a <args>
+  EarlyCascade.py -p <process> -u <url> -r <rawShellcode>
+
+Options:
+  -h, --help                Show this help message and exit
+  -p, --process             Target process to create and inject into (e.g., notepad.exe)
+  -u, --url                 URL where the dropper fetches the shellcode from
+  -b, --binary              Path to a PE binary used to generate shellcode via Donut
+  -a, --args                Arguments to pass to the binary during shellcode generation
+  -r, --rawShellcode        Path to a raw shellcode file (Donut will not be used)
+"""
 
 
 def parseCmdLine(argv):
@@ -248,10 +264,8 @@ def parseCmdLine(argv):
         process=""
         url=""
         targetHost=""
-        sideDll=""
-        sideDllPath=""
 
-        opts, args = getopt.getopt(argv,"hb:a:r:u:p:t:s:d:",["binary=","args=","rawShellcode=","url=","process=","targetHost=","sideDll=","SideDllPathOnHostSystem="])
+        opts, args = getopt.getopt(argv,"hb:a:r:u:p:t:s:d:",["binary=","args=","rawShellcode=","url=","process=","targetHost="])
         for opt, arg in opts:
                 if opt == '-h':
                         print (helpMessage)
@@ -268,12 +282,8 @@ def parseCmdLine(argv):
                         process = arg
                 elif opt in ("-t", "--targetHost"):
                         targetHost = arg
-                elif opt in ("-s", "--sideDll"):
-                        sideDll = arg
-                elif opt in ("-d", "--SideDllPathOnHostSystem"):
-                        sideDllPath = arg
 
-        return binary, binaryArgs, rawShellCode, process, url, targetHost, sideDll, sideDllPath
+        return binary, binaryArgs, rawShellCode, process, url, targetHost
 
 
 def main(argv):
@@ -282,7 +292,7 @@ def main(argv):
                 print (helpMessage)
                 exit()
         
-        binary, binaryArgs, rawShellCode, process, url, targetHost, sideDll, sideDllPath = parseCmdLine(argv)
+        binary, binaryArgs, rawShellCode, process, url, targetHost = parseCmdLine(argv)
 
         droppersPath, shellcodesPath, cmdToRun = generatePayloads(binary, binaryArgs, rawShellCode, process, url, targetHost)
         print("\n[+] Dropper path  : ", droppersPath)
